@@ -244,8 +244,8 @@ fn run_sync_engine(
                     let time_diff_secs = (data_1.seconds - data_2.seconds).abs();
                     let size_diff = (data_1.size as i64 - data_2.size as i64).unsigned_abs();
 
-                    let size_threshold = 100 * 1024; // 100 KB
-                    let size_tolerance = 1024; // 1 KB
+                    let size_threshold = 100 * 1024;
+                    let size_tolerance = 1024;
                     let max_size = std::cmp::max(data_1.size, data_2.size);
 
                     if time_diff_secs >= 1 {
@@ -282,7 +282,6 @@ fn run_sync_engine(
 
     if !arguments.dry_run {
         write_transaction.commit()?;
-        // Pruning phase for empty directories after file sync finishes
         prune_empty_directories(vault_1, statistics)?;
         prune_empty_directories(vault_2, statistics)?;
     }
@@ -295,7 +294,6 @@ fn prune_empty_directories(root: &Path, statistics: &SyncStats) -> Result<()> {
         return Ok(());
     }
 
-    // Read entries and prune subdirectories first to handle nested empty folders
     for entry in fs::read_dir(root)? {
         let path = entry?.path();
         if path.is_dir() {
@@ -303,15 +301,11 @@ fn prune_empty_directories(root: &Path, statistics: &SyncStats) -> Result<()> {
         }
     }
 
-    // After subdirectories are potentially pruned, check if current root is empty
-    if fs::read_dir(root)?.next().is_none() {
-        // We don't want to delete the root vaults themselves
-        if root.parent().is_some() {
-            let _ = fs::remove_dir(root);
-            statistics
-                .deleted
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        }
+    if fs::read_dir(root)?.next().is_none() && root.parent().is_some() {
+        let _ = fs::remove_dir(root);
+        statistics
+            .deleted
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
     Ok(())
 }
