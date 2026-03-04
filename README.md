@@ -23,8 +23,8 @@ cargo build --release
 ## Usage
 Some useful commands are:
 
-`syncron <path_to_first_dir> <path_to_second_dir>` — standard synchronization command.
-`syncron --dry-run <path_to_first_dir> <path_to_second_dir>` — a simulation of the result of a sync operation.
-`syncron --config` — show the paths of the state database **and** the binary log file containing the last directory paths that were synced, which allows running `syncron` without arguments.
+- `syncron <path_to_first_dir> <path_to_second_dir>` — standard synchronization command.
+- `syncron --dry-run <path_to_first_dir> <path_to_second_dir>` — a simulation of the result of a sync operation.
+- `syncron --config` — show the paths of the state database **and** the binary log file containing the last directory paths that were synced, which allows running `syncron` without arguments.
 
 Run `syncron -h` — or `cargo run -- -h` inside the project folder if it's still not in your `PATH` — for more usage details if you decide to build it.
