@@ -281,9 +281,9 @@ fn run_sync_engine(
     }
 
     if !arguments.dry_run {
-        write_transaction.commit()?;
         prune_empty_directories(vault_1, statistics)?;
         prune_empty_directories(vault_2, statistics)?;
+        write_transaction.commit()?;
     }
     progress_bar.finish_and_clear();
     Ok(())
@@ -294,18 +294,31 @@ fn prune_empty_directories(root: &Path, statistics: &SyncStats) -> Result<()> {
         return Ok(());
     }
 
-    for entry in fs::read_dir(root)? {
-        let path = entry?.path();
-        if path.is_dir() {
-            prune_empty_directories(&path, statistics)?;
+    let entries = match fs::read_dir(root) {
+        Ok(e) => e,
+        Err(_) => {
+            statistics.errors.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            return Ok(());
+        }
+    };
+
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.is_dir() {
+                let _ = prune_empty_directories(&path, statistics);
+            }
         }
     }
 
-    if fs::read_dir(root)?.next().is_none() && root.parent().is_some() {
-        let _ = fs::remove_dir(root);
-        statistics
-            .deleted
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut entries) = fs::read_dir(root) {
+        if entries.next().is_none() && root.parent().is_some() {
+            if fs::remove_dir(root).is_err() {
+                statistics.errors.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            } else {
+                statistics.deleted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
     }
     Ok(())
 }
