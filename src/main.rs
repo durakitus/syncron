@@ -302,24 +302,21 @@ fn prune_empty_directories(root: &Path, statistics: &SyncStats) -> Result<()> {
         }
     };
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_dir() {
-                let _ = prune_empty_directories(&path, statistics);
-            }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let _ = prune_empty_directories(&path, statistics);
         }
     }
 
-    if let Ok(mut entries) = fs::read_dir(root) {
-        if entries.next().is_none() && root.parent().is_some() {
+    if let Ok(mut entries) = fs::read_dir(root)
+        && entries.next().is_none() && root.parent().is_some() {
             if fs::remove_dir(root).is_err() {
                 statistics.errors.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             } else {
                 statistics.deleted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
         }
-    }
     Ok(())
 }
 
