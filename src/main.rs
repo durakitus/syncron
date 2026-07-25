@@ -82,6 +82,7 @@ fn main() -> Result<()> {
     }
 
     let (vault_1_path, vault_2_path) = resolve_vault_paths(&arguments, &log_path)?;
+    validate_vault_paths(&vault_1_path, &vault_2_path)?;
     println!(
         "{} {} ↔ {}",
         "Syncing:".bold(),
@@ -386,6 +387,27 @@ fn resolve_vault_paths(arguments: &Args, log_path: &Path) -> Result<(PathBuf, Pa
     fs::write(log_path, persistent_config)?;
 
     Ok((path_1, path_2))
+}
+
+fn validate_vault_paths(path_1: &Path, path_2: &Path) -> Result<()> {
+    let exists_1 = path_1.is_dir();
+    let exists_2 = path_2.is_dir();
+
+    match (exists_1, exists_2) {
+        (true, true) => Ok(()),
+        (false, false) => {
+            println!("Both directories are missing, please check your devices.");
+            std::process::exit(1);
+        }
+        (false, true) => {
+            println!("Path {} not found.", path_1.display());
+            std::process::exit(1);
+        }
+        (true, false) => {
+            println!("Path {} not found.", path_2.display());
+            std::process::exit(1);
+        }
+    }
 }
 
 fn print_summary(statistics: &SyncStats, is_dry_run: bool) {
